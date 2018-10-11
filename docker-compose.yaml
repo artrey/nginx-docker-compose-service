@@ -1,0 +1,58 @@
+version: "3.1"
+
+# change it: network_name, db, user, password, image_container, host, ssl_email
+
+services:
+  postgres:
+    image: postgres:alpine
+    restart: always
+    networks:
+      - network_name
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+
+  server:
+    image: image_container
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - network_name
+    volumes:
+      - ${SECRET:-./compose-secret.yaml}:/compose-secret.yaml
+      - static-files:/static/
+    environment:
+      POSTGRES_HOST: postgres
+      SPECIFY_SETTINGS: /compose-secret.yaml
+      SUPERUSER: admin::develop
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    networks:
+      - network_name
+      - webproxy
+    volumes:
+      - ./nginx/:/etc/nginx/conf.d/
+      - ./nginx/logs/:/var/log/nginx/
+      - static-files:/var/www/static/
+    expose:
+      - "80"
+    depends_on:
+      - server
+    environment:
+      VIRTUAL_HOST: host
+      LETSENCRYPT_HOST: host
+      LETSENCRYPT_EMAIL: ssl_email
+
+networks:
+  network_name:
+    driver: bridge
+  webproxy:
+    external:
+      name: webproxy
+
+volumes:
+  static-files:
