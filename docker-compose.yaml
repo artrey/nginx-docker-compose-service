@@ -8,6 +8,8 @@ services:
     restart: always
     networks:
       - network_name
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: db
       POSTGRES_USER: user
